@@ -19,8 +19,6 @@ const cacheConnection = redis.createClient({
 });
 await cacheConnection.connect();
 console.log('Connected to Redis');
-await cacheConnection.flushAll();
-console.log('Cache flushed');
 
 app.post('/calculate', async (req, res) => {
   try {
