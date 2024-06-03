@@ -5,7 +5,19 @@ import redis from 'redis';
 const { Pool } = pg;
 const app = express();
 app.use(express.json());
-const pool = new Pool();
+const pool = new Pool({
+  //   PGUSER=nathan
+  // PGPASSWORD=123123qwe
+  // PGHOST=localhost
+  // PGDATABASE=nathan
+  // PGPORT=5432
+  // PORT=3000
+  user: process.env.PGUSER,
+  host: process.env.PGHOST,
+  database: process.env.PGDATABASE,
+  password: process.env.PGPASSWORD,
+  port: process.env.PGPORT,
+});
 const cacheHostName = process.env.AZURE_CACHE_FOR_REDIS_HOST_NAME;
 const cachePassword = process.env.AZURE_CACHE_FOR_REDIS_ACCESS_KEY;
 if (!cacheHostName || !cachePassword) {
@@ -79,6 +91,27 @@ app.get('/hist_log', async (_, res) => {
     client.release();
   } catch (e) {
     console.error('Error processing /hist_log request', e);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+app.post('/setup', async (_, res) => {
+  try {
+    const client = await pool.connect();
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS hist_log (
+        id SERIAL PRIMARY KEY,
+        num1 NUMERIC NOT NULL,
+        num2 NUMERIC NOT NULL,
+        result NUMERIC NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    `;
+    await client.query(createTableQuery);
+    res.send('Table created');
+    client.release();
+  } catch (e) {
+    console.error('Error processing /setup request', e);
     res.status(500).send('Internal Server Error');
   }
 });
