@@ -18,7 +18,7 @@ async function main() {
     keyVaultCredential = new DefaultAzureCredential();
     keyVaultName = process.env.KEY_VAULT_NAME;
     if (!keyVaultName) throw new Error('KEY_VAULT_NAME is empty');
-    url = 'https://' + keyVaultName + '.vault.azure.net';
+    keyVaultUrl = 'https://' + keyVaultName + '.vault.azure.net';
     keyVaultClient = new SecretClient(keyVaultUrl, keyVaultCredential);
   }
 
