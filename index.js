@@ -3,9 +3,11 @@ import pg from 'pg';
 import redis from 'redis';
 import { SecretClient } from '@azure/keyvault-secrets';
 import { DefaultAzureCredential } from '@azure/identity';
+import dotenv from 'dotenv';
 
 const { Pool } = pg;
 
+dotenv.config();
 const isProd = process.env.NODE_ENV === 'production';
 
 async function main() {
@@ -24,28 +26,35 @@ async function main() {
 
   const app = express();
   app.use(express.json());
-  const pool = new Pool({
+
+  const poolConfig = {
     user: isProd
-      ? await keyVaultClient.getSecret('PGUSER')
+      ? (await keyVaultClient.getSecret('PGUSER')).value
       : process.env.PGUSER,
     host: isProd
-      ? await keyVaultClient.getSecret('PGHOST')
+      ? (await keyVaultClient.getSecret('PGHOST')).value
       : process.env.PGHOST,
     database: isProd
-      ? await keyVaultClient.getSecret('PGDATABASE')
+      ? (await keyVaultClient.getSecret('PGDATABASE')).value
       : process.env.PGDATABASE,
     password: isProd
-      ? await keyVaultClient.getSecret('PGPASSWORD')
+      ? (await keyVaultClient.getSecret('PGPASSWORD')).value
       : process.env.PGPASSWORD,
     port: isProd
-      ? await keyVaultClient.getSecret('PGPORT')
+      ? (await keyVaultClient.getSecret('PGPORT')).value
       : process.env.PGPORT,
+  };
+
+  const pool = new Pool({
+    ...poolConfig,
+    ssl: isProd,
   });
+
   const cacheHostName = isProd
-    ? await keyVaultClient.getSecret('AZURE-CACHE-FOR-REDIS-HOST-NAME')
+    ? (await keyVaultClient.getSecret('AZURE-CACHE-FOR-REDIS-HOST-NAME')).value
     : process.env['AZURE-CACHE-FOR-REDIS-HOST-NAME'];
   const cachePassword = isProd
-    ? await keyVaultClient.getSecret('AZURE-CACHE-FOR-REDIS-ACCESS-KEY')
+    ? (await keyVaultClient.getSecret('AZURE-CACHE-FOR-REDIS-ACCESS-KEY')).value
     : process.env['AZURE-CACHE-FOR-REDIS-ACCESS-KEY'];
 
   if (!cacheHostName || !cachePassword) {
@@ -145,7 +154,7 @@ async function main() {
   });
 
   app.get('/', async (req, res) => {
-    res.send('Hello World!\n');
+    res.send('Hello World from version 4!\n');
   });
 
   app.get('/test_redis', async (req, res) => {
